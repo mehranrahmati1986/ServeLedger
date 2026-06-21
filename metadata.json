@@ -1,8 +1,0 @@
-{
-  "name": "سیستم جامع مدیریت رستوران",
-  "description": "A comprehensive POS, Accounting, and Inventory application for restaurants and cafes with a beautiful Persian UI.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
