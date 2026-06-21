@@ -223,7 +223,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
   };
 
   return (
-    <div className="flex h-full gap-6 relative">
+    <div className="flex h-full flex-col gap-5 relative overflow-hidden xl:flex-row">
       {/* Receipt Modal */}
       {completedOrder && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm print:bg-transparent print:p-0">
@@ -404,7 +404,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
       )}
 
       {/* Main Content (Products) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden no-print">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden no-print">
         
         {digitalMenuPendingOrders.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shrink-0 flex flex-col gap-3">
@@ -440,7 +440,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
         )}
 
         {/* Top Header & Filters */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 shrink-0 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-5 shrink-0 flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -487,8 +487,8 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto pb-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="flex-1 overflow-y-auto pb-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
             {filteredProducts.map(product => {
               const cartItem = cart.find(c => c.id === product.id);
               const isOutOfStock = product.stock <= 0;
@@ -540,7 +540,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
       </div>
 
       {/* Cart (Order Sidebar) - Visually on the left due to RTL */}
-      <div className="w-[380px] bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0 h-full no-print">
+      <div className="w-full bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0 h-[44vh] min-h-[360px] xl:h-full xl:w-[380px] no-print">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-zinc-900 text-white">
           <h2 className="font-bold text-lg flex items-center gap-2">
             <ShoppingBasket size={20} className="text-amber-500" /> سفارش جاری

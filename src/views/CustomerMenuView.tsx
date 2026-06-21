@@ -1,8 +1,22 @@
-import React, { useState, useMemo } from 'react';
-import { Product, OrderItem, Feedback } from '../types';
+import React, { useMemo, useState } from 'react';
 import { categories } from '../data';
-import { formatPrice, cn } from '../lib/utils';
-import { Search, Coffee, Plus, Minus, ShoppingBag, X, Star, Receipt } from 'lucide-react';
+import { Feedback, OrderItem, Product } from '../types';
+import { cn, formatPrice, formatNumber } from '../lib/utils';
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChefHat,
+  Coffee,
+  Minus,
+  Plus,
+  Receipt,
+  Search,
+  ShoppingBag,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  X
+} from 'lucide-react';
 
 interface CustomerMenuViewProps {
   products: Product[];
@@ -13,8 +27,18 @@ interface CustomerMenuViewProps {
   onAddFeedback?: (feedback: Omit<Feedback, 'id'>) => void;
 }
 
-export function CustomerMenuView({ products, tableNumber, restaurantInfo, orders = [], onPlaceOrder, onAddFeedback }: CustomerMenuViewProps) {
-  const [activeCategory, setActiveCategory] = useState('همه');
+const normalizeText = (value: string) => value.trim().toLocaleLowerCase('fa-IR');
+
+export function CustomerMenuView({
+  products,
+  tableNumber,
+  restaurantInfo,
+  orders = [],
+  onPlaceOrder,
+  onAddFeedback
+}: CustomerMenuViewProps) {
+  const allCategory = categories[0] || 'همه';
+  const [activeCategory, setActiveCategory] = useState(allCategory);
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
@@ -23,19 +47,39 @@ export function CustomerMenuView({ products, tableNumber, restaurantInfo, orders
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
+  const availableProducts = useMemo(
+    () => products.filter(product => product.isActive !== false && product.stock > 0),
+    [products]
+  );
+
   const tableOrders = useMemo(() => {
-    return orders.filter(o => o.tableNumber === (tableNumber ? parseInt(tableNumber, 10) : undefined));
+    const currentTable = tableNumber ? parseInt(tableNumber, 10) : undefined;
+    return orders.filter(order => order.tableNumber === currentTable);
   }, [orders, tableNumber]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      // Only show products that are active and in stock
-      if (p.isActive === false || p.stock <= 0) return false;
-      const matchesCat = activeCategory === 'همه' || p.category === activeCategory;
-      const matchesSearch = p.name.includes(searchQuery) || p.category.includes(searchQuery);
-      return matchesCat && matchesSearch;
+  const categoryStats = useMemo(() => {
+    const countByCategory = new Map<string, number>();
+    availableProducts.forEach(product => {
+      countByCategory.set(product.category, (countByCategory.get(product.category) || 0) + 1);
     });
-  }, [products, activeCategory, searchQuery]);
+
+    return categories.map(category => ({
+      name: category,
+      count: category === allCategory ? availableProducts.length : countByCategory.get(category) || 0
+    })).filter(item => item.name === allCategory || item.count > 0);
+  }, [allCategory, availableProducts]);
+
+  const query = normalizeText(searchQuery);
+
+  const filteredProducts = useMemo(() => {
+    return availableProducts.filter(product => {
+      const matchesCategory = activeCategory === allCategory || product.category === activeCategory;
+      const searchableText = normalizeText(`${product.name} ${product.category} ${product.price}`);
+      return matchesCategory && (!query || searchableText.includes(query));
+    });
+  }, [activeCategory, allCategory, availableProducts, query]);
+
+  const featuredProduct = filteredProducts[0] || availableProducts[0];
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -51,8 +95,7 @@ export function CustomerMenuView({ products, tableNumber, restaurantInfo, orders
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === id) {
-        const newQ = item.quantity + delta;
-        return newQ > 0 ? { ...item, quantity: newQ } : item;
+        return { ...item, quantity: item.quantity + delta };
       }
       return item;
     }).filter(item => item.quantity > 0));
@@ -65,325 +108,438 @@ export function CustomerMenuView({ products, tableNumber, restaurantInfo, orders
 
   const handlePlaceOrder = () => {
     if (!tableNumber) {
-      alert('لطفا منو را از طریق بارکد روی میز اسکن کنید.');
+      alert('لطفا منو را از طریق QR روی میز اسکن کنید.');
       return;
     }
-    if (onPlaceOrder) {
-      const oid = onPlaceOrder(cart, parseInt(tableNumber, 10));
-      if (typeof oid === 'string') {
-        setPlacedOrderId(oid);
-      } else {
-        setPlacedOrderId('ORD-TEMP');
-      }
-      setCart([]);
-    }
+
+    if (cart.length === 0) return;
+
+    const orderId = onPlaceOrder?.(cart, parseInt(tableNumber, 10));
+    setPlacedOrderId(typeof orderId === 'string' ? orderId : 'ORD-TEMP');
+    setCart([]);
   };
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onAddFeedback) {
-      onAddFeedback({
-        rating,
-        comment,
-        date: new Date().toISOString(),
-        orderId: placedOrderId || undefined
-      });
-      alert('نظر شما با موفقیت ثبت شد. با تشکر!');
-      setPlacedOrderId(null);
-      setIsCartModalOpen(false);
-      setRating(5);
-      setComment('');
-    }
+
+    onAddFeedback?.({
+      rating,
+      comment,
+      date: new Date().toISOString(),
+      orderId: placedOrderId || undefined
+    });
+
+    alert('نظر شما با موفقیت ثبت شد. ممنون از همراهی شما.');
+    setPlacedOrderId(null);
+    setIsCartModalOpen(false);
+    setRating(5);
+    setComment('');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 flex flex-col" dir="rtl">
-      {/* Header */}
-      <header className="bg-zinc-900 text-white pt-12 pb-6 px-6 text-center rounded-b-[40px] shadow-lg sticky top-0 z-20">
-        <div className="flex justify-between items-center w-full max-w-md mx-auto mb-4 px-2">
-           <button 
-             onClick={() => setIsOrdersModalOpen(true)}
-             className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors relative"
-             title="سفارشات من"
-           >
-             <Receipt size={18} />
-             {tableOrders.length > 0 && (
-               <span className="absolute -top-1 -right-1 bg-amber-500 text-zinc-900 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center">
-                 {tableOrders.length}
-               </span>
-             )}
-           </button>
-           <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 text-zinc-900 mx-auto overflow-hidden">
-             {restaurantInfo?.logo ? (
-                <img src={restaurantInfo.logo} alt={restaurantInfo.name} className="w-full h-full object-cover" />
-             ) : (
-                <Coffee size={32} />
-             )}
-           </div>
-           <button 
-             onClick={() => window.location.href = '/reserve'}
-             className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
-             title="رزرو میز"
-           >
-             <span className="text-xl">📅</span>
-           </button>
-        </div>
-        <h1 className="text-2xl font-bold mb-1">{restaurantInfo?.name || 'رستوران پلاس'}</h1>
-        {tableNumber ? (
-          <p className="text-amber-400 font-medium text-sm">شما در حال مشاهده منوی میز {tableNumber} هستید</p>
-        ) : (
-          <p className="text-slate-400 font-medium text-sm">{restaurantInfo?.address || 'منوی دیجیتال رستوران'}</p>
+    <div className="min-h-dvh bg-[#f8fafc] font-sans text-slate-950" dir="rtl">
+      <header className="relative overflow-hidden bg-slate-950 text-white">
+        {featuredProduct?.image && (
+          <img
+            src={featuredProduct.image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover opacity-28"
+          />
         )}
-      </header>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/78 via-slate-950/76 to-slate-950" />
 
-      <main className="px-5 flex-1 -mt-4 relative z-10">
-        {/* Search */}
-        <div className="bg-white rounded-2xl shadow-sm p-2 mb-6">
-          <div className="relative">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input 
-              type="text" 
-              placeholder="جستجوی غذا یا نوشیدنی..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-none py-3 pr-12 pl-4 focus:outline-none text-slate-800"
-            />
+        <div className="relative mx-auto flex min-h-[22rem] w-full max-w-6xl flex-col px-5 pb-7 pt-5 sm:px-7">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={() => setIsOrdersModalOpen(true)}
+              className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white backdrop-blur hover:bg-white/15"
+              title="سفارش‌های من"
+            >
+              <Receipt size={19} />
+              {tableOrders.length > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-black text-slate-950 ring-2 ring-slate-950">
+                  {formatNumber(tableOrders.length)}
+                </span>
+              )}
+            </button>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-md">
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-amber-400 text-slate-950">
+                {restaurantInfo?.logo ? (
+                  <img src={restaurantInfo.logo} alt={restaurantInfo.name} className="h-full w-full object-cover" />
+                ) : (
+                  <Coffee size={24} />
+                )}
+              </div>
+              <div className="max-w-[11rem] text-right sm:max-w-xs">
+                <p className="truncate text-sm font-black">{restaurantInfo?.name || 'رستوران پلاس'}</p>
+                <p className="truncate text-xs font-semibold text-white/58">
+                  {tableNumber ? `میز ${tableNumber}` : restaurantInfo?.phone || 'منوی دیجیتال'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { window.location.href = '/reserve'; }}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white backdrop-blur hover:bg-white/15"
+              title="رزرو میز"
+            >
+              <CalendarDays size={19} />
+            </button>
+          </div>
+
+          <div className="mt-auto grid gap-5 pt-12 lg:grid-cols-[1fr_22rem] lg:items-end">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/12 px-3 py-1 text-xs font-black text-amber-200">
+                <ChefHat size={14} />
+                منوی امروز
+              </div>
+              <h1 className="max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-5xl">
+                انتخاب غذا، بدون انتظار
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-white/70 sm:text-base">
+                {tableNumber
+                  ? `سفارش میز ${tableNumber} مستقیم برای آشپزخانه ثبت می‌شود.`
+                  : restaurantInfo?.address || 'برای ثبت سفارش، QR روی میز را اسکن کنید.'}
+              </p>
+            </div>
+
+            {featuredProduct && (
+              <div className="hidden overflow-hidden rounded-2xl border border-white/12 bg-white/10 p-3 shadow-2xl shadow-black/20 backdrop-blur lg:block">
+                <img src={featuredProduct.image} alt={featuredProduct.name} className="h-44 w-full rounded-xl object-cover" />
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-amber-200">پیشنهاد سریع</p>
+                    <h2 className="mt-1 truncate text-lg font-black text-white">{featuredProduct.name}</h2>
+                  </div>
+                  <button
+                    onClick={() => addToCart(featuredProduct)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20"
+                    title="افزودن"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+      </header>
 
-        {/* Categories */}
-        <div className="flex gap-3 overflow-x-auto pb-4 mb-2 scrollbar-none snap-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={cn(
-                "px-5 py-2.5 rounded-full whitespace-nowrap font-medium transition-all shadow-sm snap-center",
-                activeCategory === cat 
-                  ? "bg-amber-500 text-zinc-900 shadow-amber-500/30" 
-                  : "bg-white text-slate-600 border border-slate-100"
+      <main className="relative z-10 mx-auto -mt-6 w-full max-w-6xl px-4 pb-32 sm:px-6">
+        <section className="sticky top-3 z-30 rounded-2xl border border-slate-200/80 bg-white/92 p-3 shadow-xl shadow-slate-950/8 backdrop-blur-xl">
+          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="relative">
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <input
+                type="search"
+                placeholder="جست‌وجوی غذا، نوشیدنی یا دسته‌بندی"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pr-12 pl-12 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute left-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  title="پاک کردن جست‌وجو"
+                >
+                  <X size={17} />
+                </button>
               )}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+            </div>
 
-        {/* Products List */}
-        <div className="space-y-4">
-          {filteredProducts.map(product => {
-            const isOutOfStock = product.stock <= 0;
-            const cartItem = cart.find(c => c.id === product.id);
+            <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600">
+              <SlidersHorizontal size={16} />
+              {formatNumber(filteredProducts.length)} آیتم
+            </div>
+          </div>
 
-            return (
-              <div 
-                key={product.id} 
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {categoryStats.map(category => (
+              <button
+                key={category.name}
+                onClick={() => setActiveCategory(category.name)}
                 className={cn(
-                  "bg-white rounded-3xl p-3 shadow-sm border border-slate-100 flex gap-4 items-center overflow-hidden transition-all relative",
-                  isOutOfStock ? "opacity-60 grayscale-[0.5]" : ""
+                  'flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-black transition',
+                  activeCategory === category.name
+                    ? 'border-slate-950 bg-slate-950 text-white shadow-lg shadow-slate-950/12'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-amber-300 hover:text-slate-950'
                 )}
               >
-                <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-slate-100">
-                  <img 
-                    src={product.image} 
+                <span>{category.name}</span>
+                <span className={cn(
+                  'rounded-full px-2 py-0.5 text-[10px] font-black',
+                  activeCategory === category.name ? 'bg-white/15 text-amber-200' : 'bg-slate-100 text-slate-500'
+                )}>
+                  {formatNumber(category.count)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {query && (
+          <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
+            <span>نتیجه جست‌وجو برای «{searchQuery}»</span>
+            <button onClick={() => setSearchQuery('')} className="rounded-lg bg-white px-3 py-1 text-xs font-black text-amber-700 shadow-sm">
+              نمایش همه
+            </button>
+          </div>
+        )}
+
+        <section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filteredProducts.map(product => {
+            const cartItem = cart.find(item => item.id === product.id);
+
+            return (
+              <article
+                key={product.id}
+                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-xl hover:shadow-slate-950/8"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                  <img
+                    src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                    loading="lazy"
                   />
-                  {isOutOfStock && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded">ناموجود</span>
+                  <div className="absolute right-3 top-3 rounded-full bg-white/92 px-3 py-1 text-xs font-black text-slate-700 shadow-sm backdrop-blur">
+                    {product.category}
+                  </div>
+                  {cartItem && (
+                    <div className="absolute left-3 top-3 flex h-9 min-w-9 items-center justify-center rounded-full bg-slate-950 px-2 text-sm font-black text-white ring-4 ring-white/45">
+                      {formatNumber(cartItem.quantity)}
                     </div>
                   )}
                 </div>
-                
-                <div className="flex-1 py-1 pr-1 flex flex-col h-full">
-                  <h3 className="font-bold text-slate-800 mb-1 leading-tight">{product.name}</h3>
-                  <p className="text-xs text-slate-400 font-medium mb-3">{product.category}</p>
-                  
-                  <div className="flex justify-between items-center mt-auto">
-                    <span className="text-amber-600 font-bold">{formatPrice(product.price)}</span>
-                    
-                    {!isOutOfStock && (
-                      cartItem ? (
-                        <div className="flex items-center gap-2 bg-amber-50 rounded-full px-2 py-1 border border-amber-100">
-                          <button onClick={() => updateQuantity(product.id, 1)} className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center">
-                            <Plus size={14} />
-                          </button>
-                          <span className="font-bold text-amber-900 w-4 text-center text-sm">{cartItem.quantity}</span>
-                          <button onClick={() => updateQuantity(product.id, -1)} className="w-6 h-6 rounded-full bg-white text-amber-500 shadow-sm flex items-center justify-center">
-                            <Minus size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => addToCart(product)}
-                          className="bg-amber-100 text-amber-700 w-8 h-8 rounded-full flex items-center justify-center hover:bg-amber-200 transition-colors"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      )
-                    )}
+
+                <div className="p-4">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="line-clamp-1 text-lg font-black text-slate-950" title={product.name}>
+                        {product.name}
+                      </h2>
+                      <p className="mt-1 text-xs font-bold text-slate-400">
+                        موجودی امروز: {formatNumber(product.stock)}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-left">
+                      <p className="text-base font-black text-amber-600">{formatPrice(product.price)}</p>
+                    </div>
                   </div>
+
+                  {cartItem ? (
+                    <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center rounded-xl border border-amber-200 bg-amber-50 p-1">
+                      <button
+                        onClick={() => updateQuantity(product.id, -1)}
+                        className="flex h-10 items-center justify-center rounded-lg bg-white text-amber-700 shadow-sm"
+                        title="کم کردن"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="text-center text-sm font-black text-amber-950">
+                        {formatNumber(cartItem.quantity)} عدد
+                      </span>
+                      <button
+                        onClick={() => addToCart(product)}
+                        disabled={cartItem.quantity >= product.stock}
+                        className="flex h-10 items-center justify-center rounded-lg bg-amber-400 text-slate-950 shadow-sm disabled:opacity-40"
+                        title="افزودن"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-black text-white shadow-lg shadow-slate-950/12 hover:bg-slate-800"
+                    >
+                      <Plus size={17} />
+                      افزودن به سفارش
+                    </button>
+                  )}
                 </div>
-              </div>
+              </article>
             );
           })}
-        </div>
+        </section>
+
+        {filteredProducts.length === 0 && (
+          <section className="mt-10 rounded-3xl border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Search size={26} />
+            </div>
+            <h2 className="text-lg font-black text-slate-900">آیتمی پیدا نشد</h2>
+            <p className="mt-2 text-sm font-medium text-slate-500">عبارت جست‌وجو یا دسته‌بندی را تغییر دهید.</p>
+          </section>
+        )}
       </main>
 
-      {/* Floating Cart Button */}
       {totalItems > 0 && (
-        <div className="fixed bottom-6 left-0 right-0 px-6 z-30 flex justify-center">
-          <button 
+        <div className="fixed inset-x-0 bottom-4 z-40 px-4">
+          <button
             onClick={() => setIsCartModalOpen(true)}
-            className="w-full max-w-sm bg-zinc-900 text-white shadow-xl shadow-zinc-900/20 rounded-2xl p-4 flex items-center justify-between group active:scale-[0.98] transition-transform"
+            className="mx-auto flex w-full max-w-xl items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950 p-3 text-white shadow-2xl shadow-slate-950/30 backdrop-blur active:scale-[0.99]"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-500 text-zinc-900 rounded-xl flex items-center justify-center relative">
-                <ShoppingBag size={20} />
-                <span className="absolute -top-2 -right-2 bg-white text-zinc-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-zinc-900">
-                  {totalItems}
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400 text-slate-950">
+                <ShoppingBag size={21} />
+                <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-white px-1 text-xs font-black text-slate-950 ring-2 ring-slate-950">
+                  {formatNumber(totalItems)}
                 </span>
               </div>
-              <span className="font-bold">مشاهده سبد خرید</span>
+              <div className="text-right">
+                <p className="text-sm font-black">مشاهده سفارش</p>
+                <p className="text-xs font-bold text-white/55">برای تکمیل سفارش</p>
+              </div>
             </div>
-            <span className="font-bold text-amber-400">{formatPrice(total)}</span>
+            <div className="flex items-center gap-2 text-amber-300">
+              <span className="text-sm font-black">{formatPrice(total)}</span>
+              <ArrowLeft size={18} />
+            </div>
           </button>
         </div>
       )}
 
-      {/* Cart Modal */}
       {isCartModalOpen && !placedOrderId && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex flex-col justify-end">
-          <div className="bg-white rounded-t-3xl h-[85vh] flex flex-col">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-800">سفارش شما</h2>
-              <button 
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/60 p-0 backdrop-blur-sm md:items-center md:justify-center md:p-5">
+          <div className="flex max-h-[88dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl md:rounded-3xl">
+            <div className="flex items-center justify-between border-b border-slate-100 p-5">
+              <div>
+                <h2 className="text-xl font-black text-slate-950">سفارش شما</h2>
+                <p className="mt-1 text-xs font-bold text-slate-500">{formatNumber(totalItems)} آیتم در سبد</p>
+              </div>
+              <button
                 onClick={() => setIsCartModalOpen(false)}
-                className="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+                title="بستن"
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-5">
-              {cart.map(item => (
-                <div key={item.id} className="flex gap-4 mb-5 border-b border-slate-50 pb-5 last:border-0 last:mb-0">
-                  <img src={item.image} alt={item.name} className="w-20 h-20 rounded-2xl object-cover bg-slate-100" />
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-bold text-slate-800 text-sm leading-tight pl-2">{item.name}</h4>
-                      <span className="font-bold text-slate-800 whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-3">
-                      <div className="flex items-center gap-2 bg-slate-100 rounded-full px-2 py-1">
-                        <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-full bg-white text-slate-700 shadow-sm flex items-center justify-center">
-                          <Plus size={14} />
+              <div className="space-y-4">
+                {cart.map(item => (
+                  <div key={item.id} className="grid grid-cols-[5rem_1fr] gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+                    <img src={item.image} alt={item.name} className="h-20 w-20 rounded-xl object-cover" />
+                    <div className="min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="line-clamp-2 text-sm font-black text-slate-900">{item.name}</h3>
+                        <span className="shrink-0 text-sm font-black text-slate-900">{formatPrice(item.price * item.quantity)}</span>
+                      </div>
+                      <div className="mt-4 inline-grid grid-cols-[2.25rem_3rem_2.25rem] items-center rounded-xl border border-slate-200 bg-white p-1">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="flex h-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100">
+                          <Minus size={15} />
                         </button>
-                        <span className="font-bold w-4 text-center text-sm">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 rounded-full bg-white text-slate-700 shadow-sm flex items-center justify-center">
-                          <Minus size={14} />
+                        <span className="text-center text-sm font-black text-slate-900">{formatNumber(item.quantity)}</span>
+                        <button onClick={() => addToCart(item)} disabled={item.quantity >= item.stock} className="flex h-9 items-center justify-center rounded-lg bg-slate-950 text-white disabled:opacity-40">
+                          <Plus size={15} />
                         </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-slate-500 text-sm font-medium">
+            <div className="border-t border-slate-100 bg-slate-50 p-5">
+              <div className="mb-5 space-y-3 rounded-2xl bg-white p-4 text-sm font-bold shadow-sm">
+                <div className="flex justify-between text-slate-500">
                   <span>جمع سفارش</span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-slate-500 text-sm font-medium">
-                  <span>مالیات (۹٪)</span>
+                <div className="flex justify-between text-slate-500">
+                  <span>مالیات ۹٪</span>
                   <span>{formatPrice(tax)}</span>
                 </div>
-                <div className="pt-3 border-t border-slate-200 flex justify-between font-bold text-lg text-slate-900">
+                <div className="flex justify-between border-t border-slate-100 pt-3 text-base font-black text-slate-950">
                   <span>مبلغ قابل پرداخت</span>
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={handlePlaceOrder}
-                className="w-full py-4 bg-amber-500 text-zinc-900 rounded-2xl font-bold text-lg shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
+                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 text-base font-black text-slate-950 shadow-lg shadow-amber-500/18"
               >
-                ثبت سفارش به آشپزخانه
+                <Sparkles size={18} />
+                ثبت سفارش
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Orders Modal */}
       {isOrdersModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex flex-col justify-end md:justify-center md:items-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md mx-auto shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-6 pb-2 border-b border-slate-100 flex items-center justify-between shrink-0">
-              <h2 className="text-xl font-bold text-slate-800">سفارشات من</h2>
-              <button 
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/60 p-0 backdrop-blur-sm md:items-center md:justify-center md:p-5">
+          <div className="flex max-h-[84dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl md:rounded-3xl">
+            <div className="flex items-center justify-between border-b border-slate-100 p-5">
+              <div>
+                <h2 className="text-xl font-black text-slate-950">سفارش‌های من</h2>
+                <p className="mt-1 text-xs font-bold text-slate-500">{tableNumber ? `میز ${tableNumber}` : 'بدون میز فعال'}</p>
+              </div>
+              <button
                 onClick={() => setIsOrdersModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+                title="بستن"
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
+
+            <div className="flex-1 overflow-y-auto bg-slate-50 p-5">
               {tableOrders.length === 0 ? (
-                <div className="text-center py-12">
-                  <Receipt size={48} className="mx-auto text-slate-300 mb-4" />
-                  <p className="text-slate-500 font-medium">هنوز سفارشی ثبت نکرده‌اید.</p>
+                <div className="rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center">
+                  <Receipt size={42} className="mx-auto mb-4 text-slate-300" />
+                  <p className="font-bold text-slate-500">هنوز سفارشی ثبت نشده است.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {tableOrders.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(order => (
-                    <div key={order.id} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="font-bold text-slate-800 mb-1 flex items-center gap-2">
-                             شماره سفارش: {order.id.slice(-4)}
-                             <span className={cn(
-                               "text-[10px] px-2 py-0.5 rounded-full",
-                               order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                               order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                               'bg-slate-100 text-slate-700'
-                             )}>
-                               {order.status === 'completed' ? 'تکمیل شده' : order.status === 'pending' ? 'در حال آماده‌سازی' : 'پیش‌نویس'}
-                             </span>
+                  {tableOrders
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map(order => (
+                      <article key={order.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-black text-slate-900">سفارش {order.id.slice(-4)}</h3>
+                            <p className="mt-1 text-xs font-bold text-slate-400">
+                              {new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(order.date))}
+                            </p>
                           </div>
-                          <div className="text-xs text-slate-500">
-                            {new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute:'2-digit' }).format(new Date(order.date))}
-                          </div>
+                          <span className={cn(
+                            'rounded-full px-3 py-1 text-xs font-black',
+                            order.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+                              order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                'bg-slate-100 text-slate-600'
+                          )}>
+                            {order.status === 'completed' ? 'تکمیل شده' : order.status === 'pending' ? 'در حال آماده‌سازی' : 'پیش‌نویس'}
+                          </span>
                         </div>
-                        <div className="text-left">
-                          <div className="font-bold text-slate-800">{formatPrice(order.total)} تومان</div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2 mb-4">
-                        {order.items.map((item, idx) => (
-                           <div key={idx} className="flex justify-between text-sm">
-                             <div className="flex items-center gap-2">
-                               <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">{item.quantity}</span>
-                               <span className="text-slate-600">{item.name}</span>
-                             </div>
-                             <span className="text-slate-500">{formatPrice(item.price * item.quantity)}</span>
-                           </div>
-                        ))}
-                      </div>
 
-                      {order.signatureUrl && (
-                        <div className="mt-4 pt-4 border-t border-slate-100 border-dashed flex flex-col items-center bg-slate-50/50 rounded-xl p-3">
-                          <div className="text-xs text-slate-500 mb-2 w-full text-center">امضای دیجیتال / تاییدیه</div>
-                          <img src={order.signatureUrl} alt="Signature" className="h-16 object-contain mix-blend-multiply" />
+                        <div className="space-y-2">
+                          {order.items.map((item, index) => (
+                            <div key={`${order.id}-${item.id}-${index}`} className="flex items-center justify-between gap-3 text-sm font-bold">
+                              <span className="line-clamp-1 text-slate-600">{formatNumber(item.quantity)} × {item.name}</span>
+                              <span className="shrink-0 text-slate-900">{formatPrice(item.price * item.quantity)}</span>
+                            </div>
+                          ))}
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        <div className="mt-4 flex justify-between border-t border-slate-100 pt-3 font-black">
+                          <span>جمع</span>
+                          <span className="text-amber-600">{formatPrice(order.total)}</span>
+                        </div>
+
+                        {order.signatureUrl && (
+                          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-center">
+                            <p className="mb-2 text-xs font-bold text-slate-400">امضای دیجیتال</p>
+                            <img src={order.signatureUrl} alt="Signature" className="mx-auto h-14 object-contain mix-blend-multiply" />
+                          </div>
+                        )}
+                      </article>
+                    ))}
                 </div>
               )}
             </div>
@@ -391,63 +547,58 @@ export function CustomerMenuView({ products, tableNumber, restaurantInfo, orders
         </div>
       )}
 
-      {/* Feedback Modal */}
       {placedOrderId && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex flex-col justify-end md:justify-center md:items-center px-4 pb-6 md:pb-0">
-          <div className="bg-white rounded-3xl w-full max-w-md mx-auto shadow-2xl overflow-hidden">
-            <div className="bg-amber-500 text-zinc-900 p-6 text-center">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
-                <Star size={32} className="text-amber-500" fill="currentColor" />
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/60 p-0 backdrop-blur-sm md:items-center md:justify-center md:p-5">
+          <div className="w-full max-w-md overflow-hidden rounded-t-3xl bg-white shadow-2xl md:rounded-3xl">
+            <div className="bg-slate-950 p-6 text-center text-white">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20">
+                <Star size={32} fill="currentColor" />
               </div>
-              <h2 className="text-2xl font-bold mb-1">لطفا نظر خود را ثبت کنید</h2>
-              <p className="opacity-90 font-medium">ما دوست داریم نظر شما را در مورد سفارش بدانیم</p>
+              <h2 className="text-2xl font-black">نظر شما مهم است</h2>
+              <p className="mt-2 text-sm font-medium leading-6 text-white/65">بعد از ثبت سفارش، تجربه خود را برای ما ثبت کنید.</p>
             </div>
-            
+
             <form onSubmit={handleSubmitFeedback} className="p-6">
               <div className="mb-6 flex justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
+                {[1, 2, 3, 4, 5].map(star => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setRating(star)}
-                    className="p-1 transition-transform hover:scale-110 focus:outline-none"
+                    className="rounded-xl p-1 transition hover:scale-110 focus:outline-none"
+                    title={`${star}`}
                   >
-                    <Star 
-                      size={40} 
-                      className={cn(
-                        star <= rating ? "text-amber-400" : "text-slate-200"
-                      )} 
-                      fill={star <= rating ? "currentColor" : "none"} 
+                    <Star
+                      size={38}
+                      className={star <= rating ? 'text-amber-400' : 'text-slate-200'}
+                      fill={star <= rating ? 'currentColor' : 'none'}
                     />
                   </button>
                 ))}
               </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-slate-700 mb-2">نظرات یا پیشنهادات شما</label>
-                <textarea
-                  value={comment}
-                  onChange={e => setComment(e.target.value)}
-                  placeholder="کیفیت غذا، سرویس‌دهی و فضای رستوران چگونه بود؟"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all text-slate-700"
-                  required
-                />
-              </div>
-              
-              <div className="flex gap-3">
+
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="کیفیت غذا، سرویس‌دهی و تجربه شما چطور بود؟"
+                className="mb-5 h-32 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                required
+              />
+
+              <div className="grid grid-cols-[1fr_2fr] gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setPlacedOrderId(null);
                     setIsCartModalOpen(false);
                   }}
-                  className="w-1/3 py-3.5 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                  className="h-12 rounded-xl bg-slate-100 text-sm font-black text-slate-600 hover:bg-slate-200"
                 >
                   انصراف
                 </button>
                 <button
                   type="submit"
-                  className="w-2/3 py-3.5 bg-amber-500 text-zinc-900 rounded-xl font-bold shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all"
+                  className="h-12 rounded-xl bg-amber-400 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/18"
                 >
                   ثبت نظر
                 </button>

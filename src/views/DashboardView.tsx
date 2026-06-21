@@ -55,18 +55,19 @@ export function DashboardView({ orders, tables, products, events, feedbacks = []
     <div 
       ref={containerRef} 
       className={cn(
-        "h-full flex flex-col gap-6 overflow-hidden transition-all",
-        isFullscreen ? "bg-slate-100 p-8" : ""
+        "h-full flex flex-col gap-5 overflow-y-auto lg:overflow-hidden transition-all pb-2",
+        isFullscreen ? "bg-slate-100 p-5 sm:p-8" : ""
       )}
     >
-      <div className="shrink-0 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">داشبورد اصلی</h2>
-          <p className="text-slate-500 mt-1">نمای کلی وضعیت سیستم و فعالیت‌های اخیر</p>
+      <div className="shrink-0 flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white/75 p-4 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-600">Live Operations</p>
+          <h2 className="mt-1 text-lg font-black text-slate-900">وضعیت لحظه‌ای سالن و فروش</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">سفارش‌های معلق، هشدارهای موجودی و بازخورد مشتریان در یک نگاه</p>
         </div>
         <button 
           onClick={toggleFullscreen}
-          className="bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 rounded-xl p-3 flex items-center justify-center transition-colors shadow-sm"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
           title={isFullscreen ? "خروج از حالت تمام صفحه" : "تمام صفحه"}
         >
           {isFullscreen ? <Minimize size={22} /> : <Maximize size={22} />}
@@ -74,7 +75,7 @@ export function DashboardView({ orders, tables, products, events, feedbacks = []
       </div>
 
       {alertProducts.length > 0 && (
-        <div className="shrink-0 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-4 shadow-sm relative overflow-hidden">
+        <div className="shrink-0 bg-red-50/95 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start gap-4 shadow-sm relative overflow-hidden">
           <div className="w-1.5 h-full bg-red-500 absolute right-0 top-0"></div>
           <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-1">
             <AlertTriangle size={24} />
@@ -94,54 +95,54 @@ export function DashboardView({ orders, tables, products, events, feedbacks = []
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+      <div className="grid grid-cols-1 gap-4 shrink-0 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
             <TrendingUp size={28} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-slate-500 mb-1">فروش امروز</p>
-            <p className="text-xl font-bold text-slate-800">{formatPrice(todaySales)}</p>
+            <p className="truncate text-xl font-black text-slate-900">{formatPrice(todaySales)}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
             <ShoppingBag size={28} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-slate-500 mb-1">سفارشات تحویل‌شده (امروز)</p>
-            <p className="text-xl font-bold text-slate-800">{formatNumber(todayOrders.length)} سفارش</p>
+            <p className="truncate text-xl font-black text-slate-900">{formatNumber(todayOrders.length)} سفارش</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
             <Coffee size={28} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-slate-500 mb-1">میزهای پر</p>
-            <p className="text-xl font-bold text-slate-800">{formatNumber(occupiedTablesCount)} از {tables.length}</p>
+            <p className="truncate text-xl font-black text-slate-900">{formatNumber(occupiedTablesCount)} از {formatNumber(tables.length)}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
             <Users size={28} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-slate-500 mb-1">وضعیت انبار</p>
-            <p className="text-sm font-bold text-slate-800">{formatNumber(outOfStockCount)} ناموجود | {formatNumber(lowStockCount)} در حال اتمام</p>
+            <p className="text-sm font-black text-slate-900">{formatNumber(outOfStockCount)} ناموجود | {formatNumber(lowStockCount)} در حال اتمام</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex gap-6">
-        <div className="w-1/3 flex flex-col">
+      <div className="grid flex-1 min-h-0 grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="min-h-[360px] xl:min-h-0 xl:col-span-1 flex flex-col">
           <ActivityLog events={events} />
         </div>
         
-        <div className="w-2/3 flex flex-col gap-6">
+        <div className="min-h-[720px] xl:min-h-0 xl:col-span-2 flex flex-col gap-5">
           <div className="flex-1 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex flex-col min-h-0">
             <h3 className="font-bold text-slate-800 mb-4 shrink-0">سفارشات منتظر تایید و آماده‌سازی ({pendingOrdersCount})</h3>
             

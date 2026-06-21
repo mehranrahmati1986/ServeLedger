@@ -517,7 +517,7 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
   return (
     <div className="h-full flex flex-col gap-6 overflow-y-auto pb-8 print:overflow-visible">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
+      <div className="finance-hero flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">حسابداری و گزارشات</h2>
           <p className="text-slate-500 mt-1">بررسی وضعیت مالی، فروش و داشبورد مدیریتی</p>
@@ -558,7 +558,7 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
         </div>
       </div>
 
-      <div className="flex bg-slate-100 p-1 rounded-xl w-max mb-6">
+      <div className="finance-tabs flex bg-slate-100 p-1 rounded-xl w-max mb-6">
         <button
           onClick={() => setActiveTab('overview')}
           className={cn(

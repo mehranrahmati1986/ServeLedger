@@ -221,7 +221,7 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
   return (
     <div className="h-full flex flex-col gap-6 relative overflow-y-auto pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between shrink-0">
+      <div className="inventory-hero flex flex-col items-start justify-between gap-4 shrink-0 lg:flex-row lg:items-center">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">انبار و ضایعات</h2>
           <p className="text-slate-500 mt-1">مدیریت موجودی، محصولات، و تاریخچه ضایعات مواد اولیه</p>
@@ -245,7 +245,7 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
+      <div className="inventory-tabs flex items-center gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
         <button
           onClick={() => setActiveMainTab('products')}
           className={cn(

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Table } from '../types';
 import { CalendarDays, Clock, Users, CheckCircle2 } from 'lucide-react';
 import { cn, formatNumber } from '../lib/utils';
+import { addPersianMonths, buildPersianMonth, formatPersianDate, persianWeekdays } from '../lib/persianCalendar';
 
 interface CustomerReservationViewProps {
   tables: Table[];
@@ -11,6 +12,7 @@ interface CustomerReservationViewProps {
 export function CustomerReservationView({ tables, onReserve }: CustomerReservationViewProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
   
   const [formData, setFormData] = useState({
     name: '',
@@ -20,6 +22,7 @@ export function CustomerReservationView({ tables, onReserve }: CustomerReservati
   });
 
   const [isSuccess, setIsSuccess] = useState(false);
+  const persianMonth = buildPersianMonth(calendarDate);
 
   const availableTables = tables.filter(t => t.status === 'available');
 
@@ -40,7 +43,7 @@ export function CustomerReservationView({ tables, onReserve }: CustomerReservati
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-2">رزرو با موفقیت ثبت شد</h2>
           <p className="text-slate-500 mb-8 leading-relaxed">
-            منتظر دیدار شما در تاریخ {formData.date} ساعت {formData.time} هستیم.
+            منتظر دیدار شما در تاریخ {formatPersianDate(formData.date)} ساعت {formData.time} هستیم.
           </p>
           <button 
             onClick={() => window.location.href = '/'}
@@ -100,14 +103,35 @@ export function CustomerReservationView({ tables, onReserve }: CustomerReservati
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2"><CalendarDays size={16}/> تاریخ</label>
-                        <input
-                          type="date"
-                          required
-                          value={formData.date}
-                          onChange={e => setFormData({...formData, date: e.target.value})}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 focus:bg-white focus:ring-2 focus:ring-amber-500 outline-none transition-all text-slate-700 font-mono"
-                          dir="ltr"
-                        />
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <div className="mb-3 flex items-center justify-between">
+                            <button type="button" onClick={() => setCalendarDate(prev => addPersianMonths(prev, -1))} className="rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-600 shadow-sm">قبلی</button>
+                            <div className="text-center">
+                              <p className="text-sm font-black text-slate-900">{persianMonth.label}</p>
+                              <p className="text-xs font-bold text-amber-600">{formData.date ? formatPersianDate(formData.date) : 'تاریخ را انتخاب کنید'}</p>
+                            </div>
+                            <button type="button" onClick={() => setCalendarDate(prev => addPersianMonths(prev, 1))} className="rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-600 shadow-sm">بعدی</button>
+                          </div>
+                          <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-black text-slate-400">
+                            {persianWeekdays.map(day => <div key={day} className="py-1">{day.slice(0, 1)}</div>)}
+                          </div>
+                          <div className="mt-1 grid grid-cols-7 gap-1">
+                            {Array.from({ length: persianMonth.leadingBlanks }).map((_, index) => <div key={`blank-${index}`} />)}
+                            {persianMonth.days.map(day => (
+                              <button
+                                type="button"
+                                key={day.iso}
+                                onClick={() => setFormData({ ...formData, date: day.iso })}
+                                className={cn(
+                                  "aspect-square rounded-xl text-sm font-black transition",
+                                  formData.date === day.iso ? "bg-amber-500 text-white shadow-md" : day.isToday ? "bg-amber-50 text-amber-700" : "bg-white text-slate-700 hover:bg-slate-100"
+                                )}
+                              >
+                                {formatNumber(day.day)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2"><Clock size={16}/> ساعت</label>
@@ -144,7 +168,7 @@ export function CustomerReservationView({ tables, onReserve }: CustomerReservati
                 <form onSubmit={handleSubmit}>
                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                      <Users size={20} className="text-amber-500" />
-                     میزهای قابل رزرو در {formData.date}
+                     میزهای قابل رزرو در {formatPersianDate(formData.date)}
                    </h3>
                    {availableTables.length === 0 ? (
                      <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
