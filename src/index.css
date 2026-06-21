@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  direction: rtl;
+  text-align: right;
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+/* Custom scrollbar for Webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; 
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-receipt, #print-receipt * {
+    visibility: visible;
+  }
+  #print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10px;
+    background: white;
+    color: black;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
