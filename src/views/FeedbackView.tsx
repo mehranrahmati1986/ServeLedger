@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { Feedback } from '../types';
-import { Search, Star, MessageSquare } from 'lucide-react';
+import { Star, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface FeedbackViewProps {
@@ -8,20 +8,9 @@ interface FeedbackViewProps {
 }
 
 export function FeedbackView({ feedbacks }: FeedbackViewProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const averageRating = feedbacks.length 
     ? (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1)
     : '0';
-  const filteredFeedbacks = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return feedbacks;
-    return feedbacks.filter(feedback => [
-      feedback.customerName || '',
-      feedback.orderId || '',
-      feedback.comment || '',
-      String(feedback.rating)
-    ].join(' ').toLowerCase().includes(query));
-  }, [feedbacks, searchQuery]);
 
   return (
     <div className="h-full flex flex-col gap-6 overflow-y-auto pb-8">
@@ -50,21 +39,6 @@ export function FeedbackView({ feedbacks }: FeedbackViewProps) {
       </div>
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 overflow-hidden flex-1 flex flex-col">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-black text-slate-900">فهرست نظرات</h3>
-              <p className="mt-1 text-sm font-bold text-slate-500">{filteredFeedbacks.length} نظر مطابق فیلتر</p>
-            </div>
-            <label className="relative w-full sm:w-96">
-              <Search size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={event => setSearchQuery(event.target.value)}
-                placeholder="جستجو در نام، سفارش، نظر یا امتیاز..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white pr-10 pl-3 text-sm font-bold text-slate-800 outline-none placeholder:text-slate-400 focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
-              />
-            </label>
-          </div>
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-right border-collapse">
               <thead>
@@ -76,14 +50,14 @@ export function FeedbackView({ feedbacks }: FeedbackViewProps) {
                 </tr>
               </thead>
               <tbody>
-                {filteredFeedbacks.length === 0 ? (
+                {feedbacks.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-12 text-center text-slate-500">
-                      نظری مطابق جستجو یافت نشد.
+                      هیچ نظری تاکنون ثبت نشده است.
                     </td>
                   </tr>
                 ) : (
-                  filteredFeedbacks.map(feedback => (
+                  feedbacks.map(feedback => (
                     <tr key={feedback.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                       <td className="py-4 px-4 text-slate-800 font-medium">
                         {feedback.customerName || (feedback.orderId ? `شماره سفارش: ${feedback.orderId.replace('ORD-', '')}` : 'مشتری ناشناس')}

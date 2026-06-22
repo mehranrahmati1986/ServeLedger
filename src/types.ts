@@ -119,4 +119,4 @@ export interface Cheque {
   description: string;
 }
 
-export type ViewType = 'dashboard' | 'pos' | 'tables' | 'inventory' | 'accounting' | 'tax-audit' | 'qr' | 'staff' | 'customers' | 'reservations' | 'settings' | 'feedback' | 'menu-mgmt';
+export type ViewType = 'dashboard' | 'pos' | 'tables' | 'inventory' | 'accounting' | 'qr' | 'staff' | 'customers' | 'reservations' | 'settings' | 'feedback' | 'menu-mgmt';

@@ -1,26 +1,23 @@
-import React, { Suspense, useState, useEffect } from 'react';
-import { CalendarDays, CircleDot, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { initialProducts, initialOrders, initialTables, initialStaff, initialEvents, initialRooms } from './data';
-import { ViewType, Product, OrderItem, Order, Table, Staff, Room, SystemEvent, Customer, Feedback, SMSMessage, Expense, Cheque, RestaurantInfo } from './types';
+import { ViewType, Product, OrderItem, Order, Table, Staff, Room } from './types';
 import { Sidebar } from './components/Sidebar';
+import { POSView } from './views/POSView';
+import { InventoryView } from './views/InventoryView';
+import { AccountingView } from './views/AccountingView';
+import { QRView } from './views/QRView';
+import { TablesView } from './views/TablesView';
+import { CustomerMenuView } from './views/CustomerMenuView';
+import { StaffView } from './views/StaffView';
+import { CustomerReservationView } from './views/CustomerReservationView';
 import { simulateSMS, MANAGER_PHONE } from './lib/sms';
-import { formatNumber } from './lib/utils';
+import { ReservationsView } from './views/ReservationsView';
+import { SettingsView } from './views/SettingsView';
+import { MenuMgmtView } from './views/MenuMgmtView';
 
-const AccountingView = React.lazy(() => import('./views/AccountingView').then(module => ({ default: module.AccountingView })));
-const CustomerMenuView = React.lazy(() => import('./views/CustomerMenuView').then(module => ({ default: module.CustomerMenuView })));
-const CustomerReservationView = React.lazy(() => import('./views/CustomerReservationView').then(module => ({ default: module.CustomerReservationView })));
-const CustomersView = React.lazy(() => import('./views/CustomersView').then(module => ({ default: module.CustomersView })));
-const DashboardView = React.lazy(() => import('./views/DashboardView').then(module => ({ default: module.DashboardView })));
-const FeedbackView = React.lazy(() => import('./views/FeedbackView').then(module => ({ default: module.FeedbackView })));
-const InventoryView = React.lazy(() => import('./views/InventoryView').then(module => ({ default: module.InventoryView })));
-const MenuMgmtView = React.lazy(() => import('./views/MenuMgmtView').then(module => ({ default: module.MenuMgmtView })));
-const POSView = React.lazy(() => import('./views/POSView').then(module => ({ default: module.POSView })));
-const QRView = React.lazy(() => import('./views/QRView').then(module => ({ default: module.QRView })));
-const ReservationsView = React.lazy(() => import('./views/ReservationsView').then(module => ({ default: module.ReservationsView })));
-const SettingsView = React.lazy(() => import('./views/SettingsView').then(module => ({ default: module.SettingsView })));
-const StaffView = React.lazy(() => import('./views/StaffView').then(module => ({ default: module.StaffView })));
-const TablesView = React.lazy(() => import('./views/TablesView').then(module => ({ default: module.TablesView })));
-const TaxAuditView = React.lazy(() => import('./views/TaxAuditView').then(module => ({ default: module.TaxAuditView })));
+import { CustomersView } from './views/CustomersView';
+import { FeedbackView } from './views/FeedbackView';
+import { DashboardView } from './views/DashboardView';
 
 const getInitialState = <T,>(key: string, defaultVal: T): T => {
   try {
@@ -31,119 +28,69 @@ const getInitialState = <T,>(key: string, defaultVal: T): T => {
   }
 };
 
-const usePersistentState = <T,>(key: string, defaultVal: T) => {
-  const [value, setValue] = useState<T>(() => getInitialState(key, defaultVal));
-
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
-
-  return [value, setValue] as const;
-};
-
-const parseStoredValue = <T,>(value: string | null): T | null => {
-  if (!value) return null;
-
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return null;
-  }
-};
-
-function AppLoading() {
-  return (
-    <div className="flex h-full min-h-[18rem] items-center justify-center rounded-2xl border border-slate-200/70 bg-white/70 p-8 text-center shadow-sm backdrop-blur">
-      <div>
-        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-amber-500" />
-        <p className="text-sm font-black text-slate-800">در حال آماده‌سازی صفحه...</p>
-        <p className="mt-1 text-xs font-semibold text-slate-500">چند لحظه صبر کنید</p>
-      </div>
-    </div>
-  );
-}
-
-const pageMeta: Record<ViewType, { title: string; description: string }> = {
-  dashboard: {
-    title: 'داشبورد اصلی',
-    description: 'نمای زنده فروش، سفارش‌ها، موجودی و رویدادهای مهم سیستم'
-  },
-  pos: {
-    title: 'صندوق فروش',
-    description: 'ثبت سریع سفارش، پرداخت، فاکتور و مدیریت سفارش‌های جاری'
-  },
-  tables: {
-    title: 'مدیریت میزها',
-    description: 'چیدمان سالن، وضعیت میزها و ظرفیت رزرو را کنترل کنید'
-  },
-  reservations: {
-    title: 'تقویم رزروها',
-    description: 'پیگیری رزروها، پیامک‌ها و وضعیت حضور مهمان‌ها'
-  },
-  inventory: {
-    title: 'انبار و محصولات',
-    description: 'کنترل موجودی، هشدار کمبود، ضایعات و دسته‌بندی کالاها'
-  },
-  'menu-mgmt': {
-    title: 'مدیریت منوی دیجیتال',
-    description: 'نمایش، قیمت‌گذاری و فعال‌سازی آیتم‌های منوی آنلاین'
-  },
-  customers: {
-    title: 'باشگاه مشتریان',
-    description: 'پروفایل مشتری، امتیاز وفاداری و سابقه سفارش‌ها'
-  },
-  feedback: {
-    title: 'نظرسنجی مشتریان',
-    description: 'مرور بازخوردها و امتیاز تجربه مشتری'
-  },
-  staff: {
-    title: 'پرسنل و شیفت‌ها',
-    description: 'مدیریت تیم، وضعیت حضور و برنامه‌ریزی شیفت کاری'
-  },
-  accounting: {
-    title: 'حسابداری و گزارش‌ها',
-    description: 'درآمد، هزینه، چک‌ها، مالیات و سود و زیان رستوران'
-  },
-  'tax-audit': {
-    title: 'حسابرسی مالیاتی',
-    description: 'کنترل هوشمند مالیات عملکرد، ارزش افزوده، حقوق و ریسک اسناد'
-  },
-  qr: {
-    title: 'منوی QR',
-    description: 'ساخت و شخصی‌سازی QR هر میز برای سفارش‌گیری دیجیتال'
-  },
-  settings: {
-    title: 'تنظیمات و پشتیبان‌گیری',
-    description: 'اطلاعات رستوران، نسخه پشتیبان و تنظیمات پایه سیستم'
-  }
-};
-
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-  const [products, setProducts] = usePersistentState<Product[]>('app_products', initialProducts);
-  const [orders, setOrders] = usePersistentState<Order[]>('app_orders', initialOrders);
-  const [tables, setTables] = usePersistentState<Table[]>('app_tables', initialTables);
-  const [rooms, setRooms] = usePersistentState<Room[]>('app_rooms', initialRooms);
-  const [staff, setStaff] = usePersistentState<Staff[]>('app_staff', initialStaff);
-  const [events, setEvents] = usePersistentState<SystemEvent[]>('app_events', initialEvents);
-  const [customers, setCustomers] = usePersistentState<Customer[]>('app_customers', []);
-  const [feedbacks, setFeedbacks] = usePersistentState<Feedback[]>('app_feedbacks', []);
-  const [smsMessages, setSmsMessages] = usePersistentState<SMSMessage[]>('app_sms', []);
-  const [expenses, setExpenses] = usePersistentState<Expense[]>('app_expenses', []);
-  const [cheques, setCheques] = usePersistentState<Cheque[]>('app_cheques', []);
-  const [restaurantInfo, setRestaurantInfo] = usePersistentState<RestaurantInfo>('app_restaurant_info', {
+  const [products, setProducts] = useState<Product[]>(() => getInitialState('app_products', initialProducts));
+  const [orders, setOrders] = useState<Order[]>(() => getInitialState('app_orders', initialOrders));
+  const [tables, setTables] = useState<Table[]>(() => getInitialState('app_tables', initialTables));
+  const [rooms, setRooms] = useState<Room[]>(() => getInitialState('app_rooms', initialRooms));
+  const [staff, setStaff] = useState<Staff[]>(() => getInitialState('app_staff', initialStaff));
+  const [events, setEvents] = useState<import('./types').SystemEvent[]>(() => getInitialState('app_events', initialEvents));
+  const [customers, setCustomers] = useState<import('./types').Customer[]>(() => getInitialState('app_customers', []));
+  const [feedbacks, setFeedbacks] = useState<import('./types').Feedback[]>(() => getInitialState('app_feedbacks', []));
+  const [smsMessages, setSmsMessages] = useState<import('./types').SMSMessage[]>(() => getInitialState('app_sms', []));
+  const [expenses, setExpenses] = useState<import('./types').Expense[]>(() => getInitialState('app_expenses', []));
+  const [cheques, setCheques] = useState<import('./types').Cheque[]>(() => getInitialState('app_cheques', []));
+  const [restaurantInfo, setRestaurantInfo] = useState<import('./types').RestaurantInfo>(() => getInitialState('app_restaurant_info', {
     name: 'رستوران پلاس',
     logo: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=150',
     address: 'تهران، خیابان ولیعصر، نرسیده به پارکش وی',
     phone: '۰۲۱-۸۸۸۸۸۸۸۸'
-  });
+  }));
   
   const [isMenuRoute, setIsMenuRoute] = useState(false);
   const [isReserveRoute, setIsReserveRoute] = useState(false);
   const [tableParam, setTableParam] = useState<string | null>(null);
 
-  const logEvent = (message: string, type: SystemEvent['type']) => {
-    const newEvent: SystemEvent = {
+  useEffect(() => {
+    localStorage.setItem('app_products', JSON.stringify(products));
+  }, [products]);
+  useEffect(() => {
+    localStorage.setItem('app_orders', JSON.stringify(orders));
+  }, [orders]);
+  useEffect(() => {
+    localStorage.setItem('app_tables', JSON.stringify(tables));
+  }, [tables]);
+  useEffect(() => {
+    localStorage.setItem('app_rooms', JSON.stringify(rooms));
+  }, [rooms]);
+  useEffect(() => {
+    localStorage.setItem('app_staff', JSON.stringify(staff));
+  }, [staff]);
+  useEffect(() => {
+    localStorage.setItem('app_events', JSON.stringify(events));
+  }, [events]);
+  useEffect(() => {
+    localStorage.setItem('app_customers', JSON.stringify(customers));
+  }, [customers]);
+  useEffect(() => {
+    localStorage.setItem('app_feedbacks', JSON.stringify(feedbacks));
+  }, [feedbacks]);
+  useEffect(() => {
+    localStorage.setItem('app_sms', JSON.stringify(smsMessages));
+  }, [smsMessages]);
+  useEffect(() => {
+    localStorage.setItem('app_expenses', JSON.stringify(expenses));
+  }, [expenses]);
+  useEffect(() => {
+    localStorage.setItem('app_cheques', JSON.stringify(cheques));
+  }, [cheques]);
+  useEffect(() => {
+    localStorage.setItem('app_restaurant_info', JSON.stringify(restaurantInfo));
+  }, [restaurantInfo]);
+
+  const logEvent = (message: string, type: import('./types').SystemEvent['type']) => {
+    const newEvent: import('./types').SystemEvent = {
         id: `evt-${Date.now()}`,
         message,
         type,
@@ -162,68 +109,17 @@ export default function App() {
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      switch (e.key) {
-        case 'app_products': {
-          const value = parseStoredValue<Product[]>(e.newValue);
-          if (value) setProducts(value);
-          break;
-        }
-        case 'app_orders': {
-          const value = parseStoredValue<Order[]>(e.newValue);
-          if (value) setOrders(value);
-          break;
-        }
-        case 'app_tables': {
-          const value = parseStoredValue<Table[]>(e.newValue);
-          if (value) setTables(value);
-          break;
-        }
-        case 'app_rooms': {
-          const value = parseStoredValue<Room[]>(e.newValue);
-          if (value) setRooms(value);
-          break;
-        }
-        case 'app_staff': {
-          const value = parseStoredValue<Staff[]>(e.newValue);
-          if (value) setStaff(value);
-          break;
-        }
-        case 'app_events': {
-          const value = parseStoredValue<SystemEvent[]>(e.newValue);
-          if (value) setEvents(value);
-          break;
-        }
-        case 'app_customers': {
-          const value = parseStoredValue<Customer[]>(e.newValue);
-          if (value) setCustomers(value);
-          break;
-        }
-        case 'app_feedbacks': {
-          const value = parseStoredValue<Feedback[]>(e.newValue);
-          if (value) setFeedbacks(value);
-          break;
-        }
-        case 'app_sms': {
-          const value = parseStoredValue<SMSMessage[]>(e.newValue);
-          if (value) setSmsMessages(value);
-          break;
-        }
-        case 'app_expenses': {
-          const value = parseStoredValue<Expense[]>(e.newValue);
-          if (value) setExpenses(value);
-          break;
-        }
-        case 'app_cheques': {
-          const value = parseStoredValue<Cheque[]>(e.newValue);
-          if (value) setCheques(value);
-          break;
-        }
-        case 'app_restaurant_info': {
-          const value = parseStoredValue<RestaurantInfo>(e.newValue);
-          if (value) setRestaurantInfo(value);
-          break;
-        }
-      }
+      if (e.key === 'app_products' && e.newValue) setProducts(JSON.parse(e.newValue));
+      if (e.key === 'app_orders' && e.newValue) setOrders(JSON.parse(e.newValue));
+      if (e.key === 'app_tables' && e.newValue) setTables(JSON.parse(e.newValue));
+      if (e.key === 'app_rooms' && e.newValue) setRooms(JSON.parse(e.newValue));
+      if (e.key === 'app_staff' && e.newValue) setStaff(JSON.parse(e.newValue));
+      if (e.key === 'app_events' && e.newValue) setEvents(JSON.parse(e.newValue));
+      if (e.key === 'app_customers' && e.newValue) setCustomers(JSON.parse(e.newValue));
+      if (e.key === 'app_feedbacks' && e.newValue) setFeedbacks(JSON.parse(e.newValue));
+      if (e.key === 'app_sms' && e.newValue) setSmsMessages(JSON.parse(e.newValue));
+      if (e.key === 'app_expenses' && e.newValue) setExpenses(JSON.parse(e.newValue));
+      if (e.key === 'app_cheques' && e.newValue) setCheques(JSON.parse(e.newValue));
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -622,8 +518,6 @@ export default function App() {
                  onAddCheque={(cheque) => setCheques(prev => [cheque, ...prev])}
                  onUpdateChequeStatus={(id, status) => setCheques(prev => prev.map(c => c.id === id ? { ...c, status } : c))}
                />;
-      case 'tax-audit':
-        return <TaxAuditView orders={orders} expenses={expenses} restaurantInfo={restaurantInfo} />;
       case 'qr':
         return <QRView tables={tables} />;
       case 'staff':
@@ -640,87 +534,24 @@ export default function App() {
     }
   };
 
-  const currentMeta = pageMeta[currentView];
-  const todayLabel = new Intl.DateTimeFormat('fa-IR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  }).format(new Date());
-  const activeOrdersCount = orders.filter(order => order.status === 'pending' || order.status === 'draft').length;
-  const occupiedTablesCount = tables.filter(table => table.status === 'occupied').length;
-
   return (
     <>
       {isReserveRoute ? (
-        <div className="public-page min-h-dvh">
-          <Suspense fallback={<AppLoading />}>
-            <CustomerReservationView tables={tables} onReserve={handleReserveTable} />
-          </Suspense>
-        </div>
+        <CustomerReservationView tables={tables} onReserve={handleReserveTable} />
       ) : isMenuRoute ? (
-        <div className="public-page min-h-dvh">
-          <Suspense fallback={<AppLoading />}>
-            <CustomerMenuView 
-              products={products} 
-              tableNumber={tableParam} 
-              restaurantInfo={restaurantInfo}
-              orders={orders}
-              onPlaceOrder={handleCustomerPlaceOrder}
-              onAddFeedback={handleAddFeedback}
-            />
-          </Suspense>
-        </div>
+        <CustomerMenuView 
+          products={products} 
+          tableNumber={tableParam} 
+          restaurantInfo={restaurantInfo}
+          orders={orders}
+          onPlaceOrder={handleCustomerPlaceOrder}
+          onAddFeedback={handleAddFeedback}
+        />
       ) : (
-        <div className="admin-shell flex h-dvh overflow-hidden font-sans print:h-auto print:bg-white print:overflow-visible">
+        <div className="flex h-screen bg-slate-100 overflow-hidden font-sans print:h-auto print:bg-white print:overflow-visible">
           <Sidebar currentView={currentView} onChangeView={setCurrentView} />
-          <main className="app-main flex-1 min-w-0 h-full overflow-hidden print:h-auto print:overflow-visible print:p-0">
-            <div className="app-main-inner h-full flex flex-col gap-5 print:p-0">
-              <header className="app-topbar no-print">
-                <div className="min-w-0 flex items-center gap-4">
-                  <div className="brand-mark shrink-0">
-                    {restaurantInfo.logo ? (
-                      <img src={restaurantInfo.logo} alt={restaurantInfo.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <Sparkles size={22} />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-                        {currentMeta.title}
-                      </h1>
-                      <span className="live-pill">
-                        <CircleDot size={12} />
-                        آنلاین
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-1 text-sm font-medium text-slate-500">
-                      {currentMeta.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="topbar-metrics">
-                  <div className="topbar-chip hidden md:flex">
-                    <CalendarDays size={16} />
-                    <span>{todayLabel}</span>
-                  </div>
-                  <div className="topbar-chip">
-                    <span className="metric-dot bg-amber-400"></span>
-                    <span>{formatNumber(activeOrdersCount)} سفارش فعال</span>
-                  </div>
-                  <div className="topbar-chip hidden sm:flex">
-                    <span className="metric-dot bg-emerald-400"></span>
-                    <span>{formatNumber(occupiedTablesCount)} میز مشغول</span>
-                  </div>
-                </div>
-              </header>
-              <section className="app-page-frame flex-1 min-h-0 overflow-hidden">
-                <Suspense fallback={<AppLoading />}>
-                  {renderView()}
-                </Suspense>
-              </section>
-            </div>
+          <main className="flex-1 p-6 h-full overflow-hidden print:h-auto print:overflow-visible print:p-0">
+            {renderView()}
           </main>
         </div>
       )}

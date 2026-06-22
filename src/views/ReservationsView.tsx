@@ -3,7 +3,6 @@ import { Table, SMSMessage } from '../types';
 import { CalendarDays, Clock, Users, Phone, X, Check, Search, Calendar as CalendarIcon, ChevronRight, ChevronLeft, MessageSquare, History } from 'lucide-react';
 import { cn, formatNumber } from '../lib/utils';
 import { simulateSMS, MANAGER_PHONE } from '../lib/sms';
-import { addPersianMonths, buildPersianMonth, formatPersianDate, persianWeekdays } from '../lib/persianCalendar';
 
 interface ReservationsViewProps {
   tables: Table[];
@@ -22,19 +21,38 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
   // Extract unique dates from reservations
   const reservedDates = Array.from(new Set(reservedTables.map(t => t.reservation?.date || '')));
 
-  const persianMonth = buildPersianMonth(currentDate);
+  // Get current month details
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  // Days in month
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay(); // 0 is Sunday
+  
+  // Adjusted for standard visualization (assuming Monday to Sunday or Sunday to Saturday, let's keep Sun-Sat for simplicity)
+  const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const blanksArray = Array.from({ length: firstDay }, (_, i) => i);
   
   const nextMonth = () => {
-    setCurrentDate(prev => addPersianMonths(prev, 1));
+    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
   };
   
   const prevMonth = () => {
-    setCurrentDate(prev => addPersianMonths(prev, -1));
+    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
   };
 
   const [selectedDate, setSelectedDate] = useState<string>(
     currentDate.toISOString().split('T')[0]
   );
+
+  const formatLocalDate = (year: number, month: number, day: number) => {
+    const m = (month + 1).toString().padStart(2, '0');
+    const d = day.toString().padStart(2, '0');
+    return `${year}-${m}-${d}`;
+  };
+
+  const dayNames = ['یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
+  const monthNames = ['ژانویه', 'فوریه', 'مارس', 'آوریل', 'مه', 'ژوئن', 'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر'];
 
   const selectedReservations = reservedTables.filter(t => t.reservation?.date === selectedDate).sort((a, b) => {
     if (a.reservation?.time && b.reservation?.time) {
@@ -70,12 +88,12 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
           <h2 className="text-2xl font-black text-slate-800">تقویم رزروها و پیامک‌ها</h2>
           <p className="text-slate-500 mt-1">مدیریت هماهنگی میزها و بازبینی تاریخچه پیامک‌های خودکار</p>
         </div>
-        <div className="app-tabs">
+        <div className="flex bg-slate-100 p-1 rounded-xl">
           <button
             onClick={() => setActiveTab('calendar')}
             className={cn(
-              "app-tab",
-              activeTab === 'calendar' && "app-tab-active text-indigo-600"
+              "px-4 py-2 flex items-center gap-2 rounded-lg text-sm font-semibold transition-all",
+              activeTab === 'calendar' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
             )}
           >
             <CalendarDays size={18} />
@@ -84,8 +102,8 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
           <button
              onClick={() => setActiveTab('sms')}
              className={cn(
-               "app-tab",
-               activeTab === 'sms' && "app-tab-active text-indigo-600"
+               "px-4 py-2 flex items-center gap-2 rounded-lg text-sm font-semibold transition-all",
+               activeTab === 'sms' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
              )}
           >
             <History size={18} />
@@ -93,7 +111,7 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
           </button>
           <button
              onClick={() => window.open(window.location.origin + '/reserve', '_blank')}
-             className="app-tab hover:text-emerald-700"
+             className="px-4 py-2 flex items-center gap-2 rounded-lg text-sm font-semibold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-all"
              title="مشاهده صفحه عمومی رزرو"
           >
             <Users size={18} />
@@ -111,7 +129,7 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
                <ChevronRight size={20} />
              </button>
              <h3 className="font-bold text-lg text-slate-800" dir="ltr">
-               {persianMonth.label}
+               {monthNames[currentMonth]} {currentYear}
              </h3>
              <button onClick={nextMonth} className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
                <ChevronLeft size={20} />
@@ -119,30 +137,30 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
            </div>
            
            <div className="grid grid-cols-7 gap-2 mb-2 text-center text-sm font-semibold text-slate-400">
-             {persianWeekdays.map(day => (
+             {dayNames.map(day => (
                <div key={day} className="py-2">{day}</div>
              ))}
            </div>
            
            <div className="grid grid-cols-7 gap-2">
-             {Array.from({ length: persianMonth.leadingBlanks }).map((_, b) => (
+             {blanksArray.map(b => (
                <div key={`blank-${b}`} className="aspect-square"></div>
              ))}
-             {persianMonth.days.map(day => {
-               const dateStr = day.iso;
+             {daysArray.map(day => {
+               const dateStr = formatLocalDate(currentYear, currentMonth, day);
                const isSelected = selectedDate === dateStr;
                const hasReservation = reservedDates.includes(dateStr);
                
                return (
                  <button 
-                   key={dateStr}
+                   key={day}
                    onClick={() => setSelectedDate(dateStr)}
                    className={cn(
                      "aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all border",
-                     isSelected ? "bg-amber-500 text-white border-amber-500 font-bold shadow-md transform scale-105" : day.isToday ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-white text-slate-700 hover:bg-slate-50 border-slate-100 hover:border-slate-300"
+                     isSelected ? "bg-amber-500 text-white border-amber-500 font-bold shadow-md transform scale-105" : "bg-white text-slate-700 hover:bg-slate-50 border-slate-100 hover:border-slate-300"
                    )}
                  >
-                   <span>{formatNumber(day.day)}</span>
+                   <span>{day}</span>
                    {hasReservation && (
                      <div className={cn("w-2 h-2 rounded-full absolute bottom-2", isSelected ? "bg-white" : "bg-amber-500")}></div>
                    )}
@@ -164,7 +182,7 @@ export function ReservationsView({ tables, smsMessages = [], onUpdateTableStatus
         <div className="w-full lg:w-1/2 flex flex-col gap-4 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 overflow-y-auto">
           <h3 className="font-bold text-lg text-slate-800 border-b border-slate-100 pb-4 mb-2 flex items-center gap-2">
              <CalendarDays size={20} className="text-amber-500" />
-             رزروهای <span>{formatPersianDate(selectedDate)}</span>
+             رزروهای <span dir="ltr">{selectedDate}</span>
           </h3>
 
           {selectedReservations.length === 0 ? (

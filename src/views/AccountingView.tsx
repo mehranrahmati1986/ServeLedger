@@ -517,56 +517,53 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
   return (
     <div className="h-full flex flex-col gap-6 overflow-y-auto pb-8 print:overflow-visible">
       {/* Header */}
-      <div className="finance-hero finance-hero-accounting flex flex-col items-stretch gap-5 print:hidden">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-3xl font-black tracking-tight text-white">حسابداری و گزارشات</h2>
-            <p className="mt-2 max-w-2xl text-sm font-bold leading-7 text-white/62">بررسی وضعیت مالی، فروش، هزینه‌ها، مالیات و سود و زیان رستوران</p>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">حسابداری و گزارشات</h2>
+          <p className="text-slate-500 mt-1">بررسی وضعیت مالی، فروش و داشبورد مدیریتی</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl shadow-inner shrink-0 leading-none">
+            <button 
+              onClick={() => setPeriod('daily')} 
+              className={cn("px-4 py-2 text-sm font-bold rounded-lg transition-colors", period === 'daily' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}
+            >روزانه</button>
+            <button 
+              onClick={() => setPeriod('weekly')} 
+              className={cn("px-4 py-2 text-sm font-bold rounded-lg transition-colors", period === 'weekly' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}
+            >هفتگی</button>
+            <button 
+              onClick={() => setPeriod('monthly')} 
+              className={cn("px-4 py-2 text-sm font-bold rounded-lg transition-colors", period === 'monthly' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}
+            >ماهانه</button>
+            <button 
+              onClick={() => setPeriod('all')} 
+              className={cn("px-4 py-2 text-sm font-bold rounded-lg transition-colors", period === 'all' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}
+            >همه</button>
           </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => window.print()}
-              className="flex h-11 items-center gap-2 rounded-xl border border-amber-300/30 bg-amber-300/12 px-4 text-sm font-black text-amber-100 hover:bg-amber-300/20"
+              className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 rounded-xl font-medium hover:bg-amber-100 transition-colors shadow-sm leading-none"
             >
               <Printer size={18} /> چاپ گزارش (PDF)
             </button>
             <button
               onClick={exportToCSV}
-              className="flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 text-sm font-black text-white/82 hover:bg-white/15"
+              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl font-medium hover:bg-slate-50 transition-colors shadow-sm leading-none"
             >
               <Download size={18} /> خروجی CSV
             </button>
           </div>
         </div>
-        <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/8 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs font-black text-white/45">بازه گزارش</span>
-          <div className="app-tabs app-tabs-compact shrink-0 leading-none">
-            <button 
-              onClick={() => setPeriod('daily')} 
-              className={cn("app-tab", period === 'daily' && "app-tab-active")}
-            >روزانه</button>
-            <button 
-              onClick={() => setPeriod('weekly')} 
-              className={cn("app-tab", period === 'weekly' && "app-tab-active")}
-            >هفتگی</button>
-            <button 
-              onClick={() => setPeriod('monthly')} 
-              className={cn("app-tab", period === 'monthly' && "app-tab-active")}
-            >ماهانه</button>
-            <button 
-              onClick={() => setPeriod('all')} 
-              className={cn("app-tab", period === 'all' && "app-tab-active")}
-            >همه</button>
-          </div>
-        </div>
       </div>
 
-      <div className="finance-tabs app-tabs mb-6 shrink-0">
+      <div className="flex bg-slate-100 p-1 rounded-xl w-max mb-6">
         <button
           onClick={() => setActiveTab('overview')}
           className={cn(
-            "app-tab",
-            activeTab === 'overview' && "app-tab-active text-indigo-600"
+            "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'overview' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
           )}
         >
           گزارش جامع
@@ -574,8 +571,8 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
         <button
           onClick={() => setActiveTab('expenses')}
           className={cn(
-            "app-tab",
-            activeTab === 'expenses' && "app-tab-active text-indigo-600"
+            "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'expenses' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
           )}
         >
           مدیریت هزینه‌ها
@@ -583,8 +580,8 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
         <button
           onClick={() => setActiveTab('cheques')}
           className={cn(
-            "app-tab",
-            activeTab === 'cheques' && "app-tab-active text-indigo-600"
+            "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'cheques' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
           )}
         >
           مدیریت چک‌ها
@@ -592,8 +589,8 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
         <button
           onClick={() => setActiveTab('taxes')}
           className={cn(
-            "app-tab",
-            activeTab === 'taxes' && "app-tab-active text-indigo-600"
+            "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'taxes' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
           )}
         >
           گزارش مالیاتی فصلی
@@ -601,8 +598,8 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
         <button
           onClick={() => setActiveTab('weekly-reports')}
           className={cn(
-            "app-tab",
-            activeTab === 'weekly-reports' && "app-tab-active text-indigo-600"
+            "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'weekly-reports' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
           )}
         >
           گزارش‌های هفتگی
@@ -610,8 +607,8 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
         <button
           onClick={() => setActiveTab('profit-loss')}
           className={cn(
-            "app-tab",
-            activeTab === 'profit-loss' && "app-tab-active text-emerald-600"
+            "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'profit-loss' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
           )}
         >
           سود و زیان (P&L)
@@ -1206,11 +1203,11 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
                   seasonalTaxReports.map(report => (
                     <tr key={report.season} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors text-sm">
                       <td className="py-4 px-4 font-bold text-slate-800">{report.season}</td>
-                      <td className="py-4 px-4 font-medium text-emerald-600">{formatPrice(report.income)}</td>
-                      <td className="py-4 px-4 font-medium text-rose-600">{formatPrice(report.expense)}</td>
-                      <td className="py-4 px-4 font-bold text-slate-700">{formatPrice(report.grossProfit)}</td>
-                      <td className="py-4 px-4 font-bold text-amber-600">{formatPrice(report.taxAmount)}</td>
-                      <td className="py-4 px-4 font-black text-indigo-700">{formatPrice(report.netProfit)}</td>
+                      <td className="py-4 px-4 font-medium text-emerald-600">{formatPrice(report.income)} تومان</td>
+                      <td className="py-4 px-4 font-medium text-rose-600">{formatPrice(report.expense)} تومان</td>
+                      <td className="py-4 px-4 font-bold text-slate-700">{formatPrice(report.grossProfit)} تومان</td>
+                      <td className="py-4 px-4 font-bold text-amber-600">{formatPrice(report.taxAmount)} تومان</td>
+                      <td className="py-4 px-4 font-black text-indigo-700">{formatPrice(report.netProfit)} تومان</td>
                     </tr>
                   ))
                 )}
@@ -1293,12 +1290,12 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
               <p className="text-sm text-slate-500 mt-1">مشاهده روند فروش، بهای تمام شده، هزینه‌ها و سود خالص</p>
             </div>
             
-            <div className="app-tabs app-tabs-compact">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setPlPeriod('monthly')}
                 className={cn(
-                  "app-tab",
-                  plPeriod === 'monthly' && "app-tab-active text-emerald-600"
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                  plPeriod === 'monthly' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
                 )}
               >
                 ماهانه
@@ -1306,8 +1303,8 @@ export function AccountingView({ orders, restaurantInfo, expenses = [], onAddExp
               <button
                 onClick={() => setPlPeriod('daily')}
                 className={cn(
-                  "app-tab",
-                  plPeriod === 'daily' && "app-tab-active text-emerald-600"
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                  plPeriod === 'daily' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
                 )}
               >
                 روزانه

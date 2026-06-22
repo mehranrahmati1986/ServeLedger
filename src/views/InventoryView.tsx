@@ -221,7 +221,7 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
   return (
     <div className="h-full flex flex-col gap-6 relative overflow-y-auto pb-8">
       {/* Header */}
-      <div className="inventory-hero flex flex-col items-start justify-between gap-4 shrink-0 lg:flex-row lg:items-center">
+      <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">انبار و ضایعات</h2>
           <p className="text-slate-500 mt-1">مدیریت موجودی، محصولات، و تاریخچه ضایعات مواد اولیه</p>
@@ -245,12 +245,12 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
       </div>
 
       {/* Tabs */}
-      <div className="inventory-tabs app-tabs">
+      <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
         <button
           onClick={() => setActiveMainTab('products')}
           className={cn(
-            "app-tab",
-            activeMainTab === 'products' && "app-tab-active"
+            "px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+            activeMainTab === 'products' ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
           )}
         >
           موجودی محصولات
@@ -258,8 +258,8 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
         <button
           onClick={() => setActiveMainTab('waste')}
           className={cn(
-            "app-tab",
-            activeMainTab === 'waste' && "app-tab-active text-rose-600"
+            "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+            activeMainTab === 'waste' ? "bg-white text-rose-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
           )}
         >
           گزارش و تاریخچه ضایعات
@@ -369,16 +369,16 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
               
               return (
                 <div key={product.id} className={cn(
-                  "group overflow-hidden rounded-3xl border bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-950/8",
-                  needsRestock ? "border-rose-200 ring-1 ring-rose-100" : "border-slate-200"
+                  "border rounded-2xl p-4 flex flex-col transition-all hover:shadow-md",
+                  needsRestock ? "border-red-200 bg-red-50/20" : "border-slate-200 bg-white"
                 )}>
                   <div className="flex gap-4">
-                     <img src={product.image} className="w-24 h-24 rounded-2xl object-cover bg-slate-100 shrink-0 ring-1 ring-slate-100 transition-transform group-hover:scale-[1.02]" alt="" />
+                     <img src={product.image} className="w-20 h-20 rounded-xl object-cover bg-slate-100 shrink-0" alt="" />
                      <div className="flex-1">
                         <div className="flex items-start justify-between">
-                          <h3 className={cn("font-black text-lg leading-7", needsRestock ? "text-rose-900" : "text-slate-900")}>{product.name}</h3>
+                          <h3 className={cn("font-bold text-lg leading-tight", needsRestock ? "text-red-900" : "text-slate-800")}>{product.name}</h3>
                         </div>
-                        <span className="inline-block mt-2 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-black">
+                        <span className="inline-block mt-1 px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-md text-xs font-medium">
                           {product.category}
                         </span>
                         {product.barcode && (
@@ -387,12 +387,12 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
                      </div>
                   </div>
                   
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                     <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                  <div className="mt-4 pt-4 border-t border-slate-100/60 grid grid-cols-2 gap-4">
+                     <div>
                         <span className="text-xs text-slate-500 block mb-1">قیمت فروش</span>
-                        <span className={cn("font-black", needsRestock ? "text-rose-900" : "text-slate-800")}>{formatPrice(product.price)}</span>
+                        <span className={cn("font-bold", needsRestock ? "text-red-900" : "text-slate-800")}>{formatPrice(product.price)}</span>
                      </div>
-                     <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                     <div>
                         <span className="text-xs text-slate-500 block mb-1">موجودی انبار</span>
                         <div className="flex items-center justify-between">
                            <div className="flex items-center gap-2">
@@ -411,12 +411,13 @@ export function InventoryView({ products, orders = [], expenses = [], onAddProdu
                                 </span>
                              )}
                            </div>
-                           <div className="flex shrink-0 items-center gap-1.5" dir="ltr">
-                              <button onClick={() => handleAdjustStock(product, -1)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-100 bg-white text-rose-600 shadow-sm hover:bg-rose-50" title="کاهش موجودی">
-                                 <Minus size={16}/>
+                           <div className="flex bg-slate-100 border border-slate-200 rounded-lg overflow-hidden shrink-0" dir="ltr">
+                              <button onClick={() => handleAdjustStock(product, -1)} className="p-1 hover:bg-white transition-colors" title="کاهش موجودی">
+                                 <Minus size={16} className="text-slate-600"/>
                               </button>
-                              <button onClick={() => handleAdjustStock(product, 1)} className="flex h-8 w-8 items-center justify-center rounded-xl border border-emerald-100 bg-white text-emerald-700 shadow-sm hover:bg-emerald-50" title="افزایش موجودی">
-                                 <Plus size={16}/>
+                              <div className="w-px bg-slate-200"></div>
+                              <button onClick={() => handleAdjustStock(product, 1)} className="p-1 hover:bg-white transition-colors" title="افزایش موجودی">
+                                 <Plus size={16} className="text-slate-600"/>
                               </button>
                            </div>
                         </div>

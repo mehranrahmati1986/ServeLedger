@@ -163,18 +163,16 @@ export function StaffView({ staff, orders = [], restaurantInfo, onAddStaff, onTo
 
   return (
     <div className="h-full flex flex-col gap-6 relative print:h-auto print:block">
-      <div className="flex items-center justify-between shrink-0 rounded-3xl border border-slate-200 bg-white/88 p-5 shadow-sm print:hidden">
+      <div className="flex items-center justify-between shrink-0 print:hidden">
         <div>
-          <h2 className="text-2xl font-black text-slate-900">پرسنل رستوران</h2>
-          <p className="text-slate-500 mt-1 font-bold">مدیریت لیست کارکنان، نقش‌ها و اطلاعات تماس</p>
+          <h2 className="text-2xl font-bold text-slate-800">پرسنل رستوران</h2>
+          <p className="text-slate-500 mt-1">مدیریت لیست کارکنان، نقش‌ها و اطلاعات تماس</p>
         </div>
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="group flex h-12 items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-l from-amber-400 to-amber-500 px-5 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-500/25"
+          className="bg-zinc-900 text-white flex items-center gap-2 px-5 py-3 rounded-xl hover:bg-zinc-800 transition-colors font-medium shadow-sm"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/50 text-slate-950">
-            <UserPlus size={18} />
-          </span>
+          <UserPlus size={20} />
           افزودن پرسنل جدید
         </button>
       </div>

@@ -124,16 +124,6 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const decrementCartItem = (id: string) => {
-    const item = cart.find(cartItem => cartItem.id === id);
-    if (!item) return;
-    if (item.quantity > 1) {
-      updateQuantity(id, -1);
-      return;
-    }
-    removeFromCart(id);
-  };
-
   const clearCart = () => setCart([]);
 
   const pointsUsedCount = usePoints && selectedCustomerId ? (customers.find(c => c.id === selectedCustomerId)?.points || 0) : 0;
@@ -233,7 +223,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
   };
 
   return (
-    <div className="flex h-full flex-col gap-5 relative overflow-hidden xl:flex-row">
+    <div className="flex h-full gap-6 relative">
       {/* Receipt Modal */}
       {completedOrder && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm print:bg-transparent print:p-0">
@@ -353,64 +343,54 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
 
       {/* Drafts / Pending Orders Modal */}
       {isDraftsModalOpen && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-md no-print">
-          <div className="w-full max-w-3xl overflow-hidden rounded-3xl border border-white/60 bg-white shadow-[0_30px_90px_-42px_rgba(15,23,42,0.72)] max-h-[82vh] flex flex-col">
-            <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-l from-amber-50 via-white to-teal-50 p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white/80 px-3 py-1.5 text-xs font-black text-amber-700">
-                    <Clock size={15} />
-                    {pendingOrders.length} سفارش باز
-                  </div>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">سفارشاتِ جاری و پیش‌نویس</h2>
-                  <p className="mt-3 text-sm font-bold leading-6 text-slate-500">سفارشاتی که منتظر تایید یا پرداخت هستند</p>
-                </div>
-                <button 
-                  onClick={() => setIsDraftsModalOpen(false)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-800"
-                  title="بستن"
-                >
-                  <X size={20} />
-                </button>
+        <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm no-print">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[80vh]">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">سفارشاتِ جاری و پیش‌نویس</h2>
+                <p className="text-sm text-slate-500 mt-1">سفارشاتی که منتظر تایید یا پرداخت هستند</p>
               </div>
+              <button 
+                onClick={() => setIsDraftsModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto bg-slate-50/70 p-5">
+            <div className="p-6 overflow-y-auto flex-1 bg-white">
               {pendingOrders.length === 0 ? (
-                <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-slate-400">
+                <div className="py-12 flex flex-col items-center justify-center text-slate-400">
                   <Clock size={48} className="mb-4 opacity-50 text-slate-300" />
-                  <p className="font-bold">هیچ سفارش منتظر یا پیش‌نویسی وجود ندارد.</p>
+                  <p>هیچ سفارش منتظر یا پیش‌نویسی وجود ندارد!</p>
                 </div>
               ) : (
-                <div className="grid gap-3">
+                <div className="grid gap-4">
                   {pendingOrders.map(order => (
-                    <div key={order.id} className="group flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl hover:shadow-slate-950/8 sm:flex-row sm:items-center">
+                    <div key={order.id} className="border border-slate-200 rounded-2xl p-4 flex items-center gap-4 hover:border-amber-300 transition-colors">
                       <div className={cn(
-                        "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border",
-                        order.status === 'draft' ? "border-slate-200 bg-slate-50 text-slate-600" : "border-amber-200 bg-amber-50 text-amber-600"
+                        "w-14 h-14 rounded-full flex items-center justify-center shrink-0",
+                        order.status === 'draft' ? "bg-slate-100 text-slate-500" : "bg-amber-100 text-amber-600"
                       )}>
                         {order.status === 'draft' ? <Bookmark size={24} /> : <Clock size={24} />}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <h4 className="font-black text-slate-950">سفارش {order.id}</h4>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-bold text-slate-800">سفارش {order.id}</h4>
                           <span className={cn(
-                            "rounded-lg px-2.5 py-1 text-xs font-black",
-                            order.status === 'draft' ? "bg-slate-100 text-slate-700" : "bg-amber-100 text-amber-800"
+                            "text-xs px-2 py-0.5 rounded-md font-bold",
+                            order.status === 'draft' ? "bg-slate-200 text-slate-700" : "bg-amber-200 text-amber-800"
                           )}>
                             {order.status === 'draft' ? 'پیش‌نویس' : 'ثبت‌شده مشتری'}
                           </span>
                         </div>
-                        <p className="text-sm font-bold leading-6 text-slate-500">
-                          {order.items.length} قلم <span className="mx-2 text-slate-300">|</span> میز: {order.tableNumber || 'ندارد'} <span className="mx-2 text-slate-300">|</span> {formatPrice(order.total)}
-                        </p>
-                        <p className="mt-1 line-clamp-1 text-xs font-bold text-slate-400">
-                          {order.items.map(item => `${item.quantity}× ${item.name}`).join('، ')}
+                        <p className="text-sm text-slate-500">
+                          {order.items.length} قلم | میز: {order.tableNumber || 'ندارد'} | {formatPrice(order.total)}
                         </p>
                       </div>
                       <button
                         onClick={() => loadDraftToCart(order)}
-                        className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition-colors hover:bg-slate-800"
+                        className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-bold hover:bg-zinc-800 transition-colors shrink-0"
                       >
                         بارگذاری در سبد
                       </button>
@@ -424,7 +404,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
       )}
 
       {/* Main Content (Products) */}
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden no-print">
+      <div className="flex-1 flex flex-col h-full overflow-hidden no-print">
         
         {digitalMenuPendingOrders.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shrink-0 flex flex-col gap-3">
@@ -460,7 +440,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
         )}
 
         {/* Top Header & Filters */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-5 shrink-0 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6 shrink-0 flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -507,8 +487,8 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto pb-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+        <div className="flex-1 overflow-y-auto pb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredProducts.map(product => {
               const cartItem = cart.find(c => c.id === product.id);
               const isOutOfStock = product.stock <= 0;
@@ -518,44 +498,19 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
                   key={product.id} 
                   onClick={() => !isOutOfStock && addToCart(product)}
                   className={cn(
-                    "group relative cursor-pointer overflow-hidden rounded-2xl border border-white/80 bg-white/95 p-2.5 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.7)] transition-all",
-                    isOutOfStock ? "opacity-55 cursor-not-allowed" : "hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-[0_24px_64px_-36px_rgba(15,23,42,0.72)]"
+                    "bg-white rounded-2xl p-3 shadow-sm border border-slate-100 transition-all group overflow-hidden cursor-pointer",
+                    isOutOfStock ? "opacity-50 cursor-not-allowed" : "hover:shadow-md hover:border-amber-200"
                   )}
                 >
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100">
+                  <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-slate-100">
                     <img 
                       src={product.image} 
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     {cartItem && (
-                      <div className="absolute inset-x-2 top-2 flex items-center justify-between gap-2">
-                        <div className="flex h-9 min-w-9 items-center justify-center rounded-xl bg-amber-400 px-2 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/25 ring-2 ring-white/70">
-                          {cartItem.quantity}
-                        </div>
-                        <div className="flex items-center gap-1 rounded-xl bg-white/92 p-1 shadow-lg ring-1 ring-slate-200 backdrop-blur">
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              decrementCartItem(product.id);
-                            }}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50"
-                            title="کاهش تعداد"
-                          >
-                            <Minus size={15} />
-                          </button>
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              addToCart(product);
-                            }}
-                            disabled={cartItem.quantity >= product.stock}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
-                            title="افزایش تعداد"
-                          >
-                            <Plus size={15} />
-                          </button>
-                        </div>
+                      <div className="absolute top-2 right-2 bg-amber-500 text-zinc-900 font-bold w-8 h-8 rounded-full flex items-center justify-center shadow-md">
+                        {cartItem.quantity}
                       </div>
                     )}
                     {isOutOfStock && (
@@ -564,14 +519,12 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
                       </div>
                     )}
                   </div>
-                  <div className="p-2.5">
-                    <h3 className="mb-2 line-clamp-1 text-base font-black text-slate-900" title={product.name}>
-                      {product.name}
-                    </h3>
-                    <div className="flex items-end justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                      <span className="text-sm font-black leading-6 text-amber-600">{formatPrice(product.price)}</span>
-                      <span className="shrink-0 text-[11px] font-bold text-slate-400">موجودی: {product.stock}</span>
-                    </div>
+                  <h3 className="font-semibold text-slate-800 line-clamp-1 mb-1" title={product.name}>
+                    {product.name}
+                  </h3>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-amber-600 font-bold">{formatPrice(product.price)}</span>
+                    <span className="text-xs text-slate-400">موجودی: {product.stock}</span>
                   </div>
                 </div>
               );
@@ -587,7 +540,7 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
       </div>
 
       {/* Cart (Order Sidebar) - Visually on the left due to RTL */}
-      <div className="w-full bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0 h-[44vh] min-h-[360px] xl:h-full xl:w-[380px] no-print">
+      <div className="w-[380px] bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0 h-full no-print">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-zinc-900 text-white">
           <h2 className="font-bold text-lg flex items-center gap-2">
             <ShoppingBasket size={20} className="text-amber-500" /> سفارش جاری
@@ -611,45 +564,30 @@ export function POSView({ products, tables, orders, customers, restaurantInfo, o
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-amber-200">
-                <div className="flex gap-3">
-                  <img src={item.image} alt={item.name} className="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-slate-100" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h4 className="line-clamp-2 text-sm font-black leading-6 text-slate-900">{item.name}</h4>
-                        <p className="mt-1 text-xs font-bold text-slate-400">هر عدد {formatPrice(item.price)}</p>
-                      </div>
-                      <span className="shrink-0 rounded-lg bg-slate-50 px-2.5 py-1 text-sm font-black text-slate-800 ring-1 ring-slate-100">
-                        {formatPrice(item.price * item.quantity)}
-                      </span>
-                    </div>
+              <div key={item.id} className="flex gap-3 pb-4 border-b border-slate-100 last:border-0">
+                <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover" />
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-semibold text-slate-800 text-sm leading-tight pr-1 line-clamp-2">{item.name}</h4>
+                    <span className="font-bold text-slate-800 text-sm whitespace-nowrap pl-1">{formatPrice(item.price * item.quantity)}</span>
                   </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-rose-100 bg-rose-50 px-3 text-xs font-black text-rose-600 hover:bg-rose-100"
-                  >
-                    <Trash2 size={14} />
-                    حذف از سبد
-                  </button>
-
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+                  <div className="flex items-center gap-3 mt-2">
                     <button 
                       onClick={() => updateQuantity(item.id, 1)}
                       disabled={item.quantity >= item.stock}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-emerald-700 shadow-sm hover:bg-emerald-50 disabled:opacity-50"
+                      className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors disabled:opacity-50"
                     >
                       <Plus size={14} />
                     </button>
-                    <span className="w-7 text-center text-sm font-black text-slate-800">{item.quantity}</span>
+                    <span className="font-semibold w-4 text-center">{item.quantity}</span>
                     <button 
-                      onClick={() => decrementCartItem(item.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-rose-600 shadow-sm hover:bg-rose-50"
+                      onClick={() => item.quantity > 1 ? updateQuantity(item.id, -1) : removeFromCart(item.id)}
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center transition-colors",
+                        item.quantity > 1 ? "bg-slate-100 hover:bg-slate-200" : "bg-red-50 text-red-500 hover:bg-red-100"
+                      )}
                     >
-                      <Minus size={14} />
+                      {item.quantity > 1 ? <Minus size={14} /> : <Trash2 size={14} />}
                     </button>
                   </div>
                 </div>

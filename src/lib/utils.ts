@@ -6,11 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatPrice(price: number) {
-  const safePrice = Number.isFinite(price) ? price : 0;
-  return `${safePrice.toLocaleString("fa-IR")} تومان`;
+  return price.toLocaleString('fa-IR') + ' تومان';
 }
 
 export function formatNumber(num: number) {
-  const safeNumber = Number.isFinite(num) ? num : 0;
-  return safeNumber.toLocaleString("fa-IR");
+  return num.toLocaleString('fa-IR');
 }
